@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Smart Parking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .animated-bg {
+            background: linear-gradient(-45deg, #0f2027, #203a43, #2c5364, #0f2027);
+            background-size: 400% 400%;
+            animation: gradientMove 12s ease infinite;
+        }
+
+        @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+        }
+    </style>
+</head>
+<body class="animated-bg min-h-screen text-white">
+    <nav class="bg-black bg-opacity-60 p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">Smart Parking Admin</h1>
+            <a href="logout.php" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container mx-auto p-8">
+        <div class="glassmorphism p-6 mb-8">
+            <h2 class="text-2xl font-bold mb-4">Dashboard Overview</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-blue-500 bg-opacity-30 p-4 rounded-lg">
+                    <h3 class="text-xl mb-2">Total Bookings</h3>
+                    <p class="text-3xl font-bold" id="totalBookings">Loading...</p>
+                </div>
+                <div class="bg-green-500 bg-opacity-30 p-4 rounded-lg">
+                    <h3 class="text-xl mb-2">Active Bookings</h3>
+                    <p class="text-3xl font-bold" id="activeBookings">Loading...</p>
+                </div>
+                <div class="bg-purple-500 bg-opacity-30 p-4 rounded-lg">
+                    <h3 class="text-xl mb-2">Total Users</h3>
+                    <p class="text-3xl font-bold" id="totalUsers">Loading...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="glassmorphism p-6">
+            <h2 class="text-2xl font-bold mb-4">Booking Details</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-800">
+                        <tr>
+                            <th class="p-4">Booking ID</th>
+                            <th class="p-4">User Name</th>
+                            <th class="p-4">Slot</th>
+                            <th class="p-4">Date</th>
+                            <th class="p-4">Check In</th>
+                            <th class="p-4">Check Out</th>
+                            <th class="p-4">Contact</th>
+                            <th class="p-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bookingTableBody">
+                        <!-- Data will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Function to fetch and display booking data
+        async function fetchBookingData() {
+            try {
+                const response = await fetch('admin_api.php');
+                const data = await response.json();
+                
+                // Update dashboard numbers
+                document.getElementById('totalBookings').textContent = data.stats.totalBookings;
+                document.getElementById('activeBookings').textContent = data.stats.activeBookings;
+                document.getElementById('totalUsers').textContent = data.stats.totalUsers;
+
+                // Update booking table
+                const tableBody = document.getElementById('bookingTableBody');
+                tableBody.innerHTML = data.bookings.map(booking => `
+                    <tr class="border-b border-gray-700">
+                        <td class="p-4">${booking.booking_id}</td>
+                        <td class="p-4">${booking.user_name}</td>
+                        <td class="p-4">${booking.slot_number}</td>
+                        <td class="p-4">${booking.booking_date}</td>
+                        <td class="p-4">${booking.check_in_time}</td>
+                        <td class="p-4">${booking.check_out_time}</td>
+                        <td class="p-4">
+                            ${booking.user_email}<br>
+                            ${booking.user_phone}
+                        </td>
+                        <td class="p-4">
+                            <button onclick="viewDetails('${booking.booking_id}')" 
+                                    class="bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded mr-2">
+                                View
+                            </button>
+                            <button onclick="deleteBooking('${booking.booking_id}')" 
+                                    class="bg-red-500 hover:bg-red-600 px-3 py-1 rounded">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+
+        // Function to view booking details
+        function viewDetails(bookingId) {
+            // Implement view details functionality
+            alert(`Viewing details for booking ${bookingId}`);
+        }
+
+        // Function to delete booking
+        async function deleteBooking(bookingId) {
+            if (confirm('Are you sure you want to delete this booking?')) {
+                try {
+                    const response = await fetch('admin_api.php', {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ booking_id: bookingId })
+                    });
+                    
+                    if (response.ok) {
+                        fetchBookingData(); // Refresh the data
+                    }
+                } catch (error) {
+                    console.error('Error deleting booking:', error);
+                }
+            }
+        }
+
+        // Fetch data when page loads
+        fetchBookingData();
+
+        // Refresh data every 30 seconds
+        setInterval(fetchBookingData, 30000);
+    </script>
+</body>
+</html>

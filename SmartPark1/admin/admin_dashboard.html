@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Smart Parking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .animated-bg {
+            background: linear-gradient(-45deg, #0f2027, #203a43, #2c5364, #0f2027);
+            background-size: 400% 400%;
+            animation: gradientMove 12s ease infinite;
+        }
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+        }
+    </style>
+</head>
+<body class="animated-bg min-h-screen text-white">
+    <nav class="bg-black bg-opacity-60 p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">Admin Dashboard</h1>
+            <div>
+                <span class="mr-4">Welcome, Admin</span>
+                <a href="logout.php" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto p-8">
+        <!-- Stats Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="glassmorphism p-6">
+                <h3 class="text-xl mb-2">Total Bookings</h3>
+                <p class="text-3xl font-bold" id="totalBookings">Loading...</p>
+            </div>
+            <div class="glassmorphism p-6">
+                <h3 class="text-xl mb-2">Active Bookings</h3>
+                <p class="text-3xl font-bold" id="activeBookings">Loading...</p>
+            </div>
+            <div class="glassmorphism p-6">
+                <h3 class="text-xl mb-2">Total Revenue</h3>
+                <p class="text-3xl font-bold" id="totalRevenue">Loading...</p>
+            </div>
+        </div>
+
+        <!-- Bookings Table -->
+        <div class="glassmorphism p-6">
+            <h2 class="text-2xl font-bold mb-4">Recent Bookings</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-black bg-opacity-50">
+                        <tr>
+                            <th class="p-4 text-left">Booking ID</th>
+                            <th class="p-4 text-left">User Name</th>
+                            <th class="p-4 text-left">Slot Number</th>
+                            <th class="p-4 text-left">Check In</th>
+                            <th class="p-4 text-left">Check Out</th>
+                            <th class="p-4 text-left">Status</th>
+                            <th class="p-4 text-left">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bookingsTable">
+                        <!-- Data will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Function to fetch booking data
+        async function fetchBookings() {
+            try {
+                const response = await fetch('get_bookings.php');
+                const data = await response.json();
+                
+                // Update stats
+                document.getElementById('totalBookings').textContent = data.stats.total;
+                document.getElementById('activeBookings').textContent = data.stats.active;
+                document.getElementById('totalRevenue').textContent = '₹' + data.stats.revenue;
+
+                // Update table
+                const tableBody = document.getElementById('bookingsTable');
+                tableBody.innerHTML = data.bookings.map(booking => `
+                    <tr class="border-b border-gray-700">
+                        <td class="p-4">${booking.booking_id}</td>
+                        <td class="p-4">${booking.user_name}</td>
+                        <td class="p-4">${booking.slot_number}</td>
+                        <td class="p-4">${booking.check_in_time}</td>
+                        <td class="p-4">${booking.check_out_time}</td>
+                        <td class="p-4">
+                            <span class="px-2 py-1 rounded ${getStatusClass(booking.status)}">
+                                ${booking.status}
+                            </span>
+                        </td>
+                        <td class="p-4">
+                            <button onclick="viewDetails('${booking.booking_id}')" 
+                                    class="bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded mr-2">
+                                View
+                            </button>
+                            <button onclick="deleteBooking('${booking.booking_id}')" 
+                                    class="bg-red-500 hover:bg-red-600 px-3 py-1 rounded">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+
+        function getStatusClass(status) {
+            switch(status) {
+                case 'Active': return 'bg-green-500 bg-opacity-50';
+                case 'Completed': return 'bg-blue-500 bg-opacity-50';
+                case 'Cancelled': return 'bg-red-500 bg-opacity-50';
+                default: return 'bg-gray-500 bg-opacity-50';
+            }
+        }
+
+        // Fetch data initially and every 30 seconds
+        fetchBookings();
+        setInterval(fetchBookings, 30000);
+    </script>
+</body>
+</html>
